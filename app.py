@@ -3,7 +3,77 @@ FAMS Module Backend - Sections 1-3
 Covers: Overview, Module Details (CFAMS Setup), Execution Procedure (CFAMO Operations)
 Stack: Flask + SQLite (swap to Oracle 10g in production per tech spec)
 """
+@app.route('/')
+def index():
+    return jsonify({
+        "message": "FAMS API is running",
+        "status": "online",
+        "endpoints": [
+            "/api/health",
+            "/api/modules",
+            "/api/operations"
+        ]
+    })
+@app.route('/api/health')
+def health_check():
+    return jsonify({
+        "status": "healthy",
+        "timestamp": datetime.now().isoformat()
+    })
+# Initialize database
+@app.route('/api/init-db', methods=['POST'])
+def init_db():
+    # Your database initialization code here
+    return jsonify({"message": "Database initialized"})
 
+# CFAMS Setup endpoints
+@app.route('/api/modules', methods=['GET'])
+def get_modules():
+    # Your code to get modules
+    return jsonify({"modules": []})
+
+@app.route('/api/modules', methods=['POST'])
+def create_module():
+    # Your code to create module
+    data = request.json
+    return jsonify({"message": "Module created", "data": data})
+
+# CFAMO Operations endpoints
+@app.route('/api/operations', methods=['GET'])
+def get_operations():
+    # Your code to get operations
+    return jsonify({"operations": []})
+def init_database():
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    
+    # Create your tables here
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS modules (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            description TEXT,
+            created_at TIMESTAMP
+        )
+    ''')
+    
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS operations (
+            id TEXT PRIMARY KEY,
+            module_id TEXT,
+            name TEXT NOT NULL,
+            status TEXT,
+            executed_at TIMESTAMP,
+            FOREIGN KEY (module_id) REFERENCES modules (id)
+        )
+    ''')
+    
+    conn.commit()
+    conn.close()
+
+# Initialize database when app starts
+with app.app_context():
+    init_database()
 from flask import Flask, request, jsonify, session, send_from_directory
 from flask_cors import CORS
 import sqlite3, os, uuid
