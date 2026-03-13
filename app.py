@@ -10,7 +10,7 @@ import sqlite3, os, uuid
 from datetime import datetime, date
 from functools import wraps
 
-app = Flask(__name__, static_folder="static", template_folder=".")
+app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "fams-dev-secret-2025")
 CORS(app, supports_credentials=True)
 
@@ -934,7 +934,8 @@ def dashboard_stats():
 
 @app.route("/")
 def index():
-    return send_from_directory(".", "index.html")
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    return send_from_directory(base_dir, "index.html")
 
 @app.route("/static/<path:filename>")
 def static_files(filename):
