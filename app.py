@@ -8,7 +8,8 @@ import sqlite3, os, uuid
 from datetime import datetime
 from functools import wraps
 
-app = Flask(__name__, static_folder="static", template_folder=".")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+app = Flask(__name__, static_folder=os.path.join(BASE_DIR,"static"), template_folder=BASE_DIR)
 app.secret_key = os.environ.get("SECRET_KEY", "fams-dev-secret-2025")
 CORS(app, supports_credentials=True)
 
@@ -76,7 +77,9 @@ def require_user(f):
     return w
 
 @app.route("/")
-def index(): return send_from_directory(".","index.html")
+def index():
+    base = os.path.dirname(os.path.abspath(__file__))
+    return send_from_directory(base, "index.html")
 
 @app.route("/api/login",methods=["POST"])
 def login():
