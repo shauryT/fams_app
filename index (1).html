@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FAMS — Fixed Asset Management System</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Arial, sans-serif; font-size: 13px; background: #f0f0f0; color: #222; }
+
+#topbar { background: #003399; color: white; padding: 6px 16px; display: flex; align-items: center; justify-content: space-between; }
+#topbar .sys-name { font-weight: bold; font-size: 14px; }
+#topbar .user-info { font-size: 12px; }
+#topbar .user-info b { font-weight: bold; }
+#topbar button { background: #fff; color: #003399; border: none; padding: 3px 12px; cursor: pointer; font-size: 12px; font-weight: bold; margin-left: 12px; }
+
+#menubar { background: #336699; display: flex; align-items: center; padding: 0 8px; min-height: 28px; }
+.menu-item { color: white; padding: 6px 16px; cursor: pointer; font-size: 12px; white-space: nowrap; }
+.menu-item:hover, .menu-item.active { background: #004488; }
+
+#content { padding: 14px; }
+
+/* LOGIN */
+#login-screen { position: fixed; inset: 0; background: #e8e8e8; display: flex; align-items: center; justify-content: center; z-index: 999; }
+.login-box { background: white; border: 1px solid #999; padding: 28px 32px; width: 340px; box-shadow: 3px 3px 10px rgba(0,0,0,0.2); }
+.login-box h2 { font-size: 14px; color: #003399; border-bottom: 2px solid #003399; padding-bottom: 6px; margin-bottom: 4px; }
+.login-box .sub { font-size: 11px; color: #777; margin-bottom: 18px; }
+.fg { margin-bottom: 12px; }
+.fg label { display: block; font-size: 12px; margin-bottom: 3px; }
+.fg label span { color: red; }
+.fg input { width: 100%; border: 1px solid #999; padding: 5px 8px; font-size: 13px; }
+.fg input:focus { outline: 1px solid #003399; }
+
+/* PAGE */
+.page-header { background: #cce0ff; border: 1px solid #99bbdd; padding: 5px 12px; font-weight: bold; font-size: 13px; color: #003399; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+
+/* CRITERIA */
+.crit-box { background: white; border: 1px solid #bbb; padding: 10px 14px; margin-bottom: 10px; }
+.crit-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 6px; }
+.crit-row:last-child { margin-bottom: 0; }
+.crit-row label { font-size: 12px; white-space: nowrap; }
+.crit-row label span { color: red; }
+.crit-row select, .crit-row input[type=text] { border: 1px solid #999; padding: 3px 6px; font-size: 12px; background: white; height: 24px; }
+.crit-row select { min-width: 180px; }
+.crit-row input[type=text] { min-width: 150px; }
+
+/* RESULT */
+.res-box { padding: 7px 12px; font-size: 12px; margin-bottom: 10px; display: none; border-left: 4px solid #28a745; background: #f0fff4; color: #155724; }
+.res-box.show { display: block; }
+.res-box.err { border-left-color: #dc3545; background: #fff0f0; color: #7a0000; }
+
+/* DETAILS */
+.det-box { background: white; border: 1px solid #bbb; padding: 12px 14px; margin-bottom: 10px; display: none; }
+.det-box.show { display: block; }
+
+/* FORM TABLE */
+.ftbl { border-collapse: collapse; }
+.ftbl td { padding: 4px 8px; vertical-align: middle; font-size: 12px; }
+.ftbl td.lbl { color: #333; width: 160px; white-space: nowrap; text-align: right; padding-right: 6px; }
+.ftbl td.lbl span { color: red; }
+.ftbl input[type=text], .ftbl input[type=number], .ftbl input[type=date], .ftbl select {
+  border: 1px solid #999; padding: 3px 6px; font-size: 12px; width: 190px; background: white; height: 24px;
+}
+.ftbl input[readonly], .ftbl select[disabled] { background: #f5f5f5; color: #666; }
+.ftbl input:focus, .ftbl select:focus { outline: 1px solid #003399; }
+
+/* BUTTONS */
+.btn-row { margin-top: 10px; display: flex; gap: 8px; }
+.btn { padding: 4px 18px; font-size: 12px; cursor: pointer; border: 1px solid #888; background: #e4e4e4; color: #222; }
+.btn:hover { background: #d0d0d0; }
+.btn-p { background: #003399; color: white; border-color: #003399; }
+.btn-p:hover { background: #0044cc; }
+
+/* TABLE */
+.dtbl { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 8px; }
+.dtbl th { background: #336699; color: white; padding: 5px 8px; text-align: left; font-weight: normal; white-space: nowrap; }
+.dtbl td { padding: 4px 8px; border-bottom: 1px solid #ddd; }
+.dtbl tr:nth-child(even) td { background: #f4f8ff; }
+.dtbl tr:hover td { background: #ddeeff; }
+
+.tag { padding: 1px 7px; font-size: 11px; border-radius: 2px; }
+.tp { background: #fff3cd; color: #856404; border: 1px solid #ffc107; }
+.ta { background: #d4edda; color: #155724; border: 1px solid #28a745; }
+.tr { background: #f8d7da; color: #721c24; border: 1px solid #dc3545; }
+.tc { background: #cce5ff; color: #004085; border: 1px solid #007bff; }
+.to { background: #e2e3e5; color: #383d41; border: 1px solid #aaa; }
+
+/* LIST BOX */
+.list-box { background: white; border: 1px solid #bbb; padding: 10px; display: none; }
+.list-box.show { display: block; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <h2>Fixed Asset Management System</h2>
+    <div class="sub">Modus Information Systems (P) Ltd · FINACLE 10.1</div>
+    <div class="fg"><label>Username <span>*</span></label><input type="text" id="lu" placeholder="Username"></div>
+    <div class="fg"><label>Password <span>*</span></label><input type="password" id="lp" placeholder="Password"></div>
+    <div id="lerr" style="color:red;font-size:12px;margin-bottom:8px;display:none"></div>
+    <div class="btn-row"><button class="btn btn-p" onclick="doLogin()">Login</button></div>
+    <div style="margin-top:12px;font-size:11px;color:#999;line-height:1.9">
+      admin_user / admin123 &nbsp;·&nbsp; maker_user / pass123<br>
+      checker_user / pass123 &nbsp;·&nbsp; teller_user / pass123
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none">
+  <div id="topbar">
+    <div class="sys-name">Fixed Asset Management System (FAMS)</div>
+    <div class="user-info">
+      User: <b id="tb-u">—</b> &nbsp;|&nbsp; Role: <b id="tb-r">—</b> &nbsp;|&nbsp; Date: <b id="tb-d">—</b>
+      <button onclick="doLogout()">Logout</button>
+    </div>
+  </div>
+  <div id="menubar">
+    <div class="menu-item active" onclick="nav('home',this)">Home</div>
+    <div class="menu-item" id="m-cfams" style="display:none" onclick="nav('cfams',this)">Fixed Asset Management Setup (CFAMS)</div>
+    <div class="menu-item" id="m-cfamo" style="display:none" onclick="nav('cfamo',this)">Fixed Asset Management Operations (CFAMO)</div>
+  </div>
+  <div id="content">
+
+    <!-- HOME -->
+    <div id="pg-home">
+      <div class="page-header">Home</div>
+      <div style="background:white;border:1px solid #bbb;padding:16px;line-height:2">
+        <b>Welcome to the Fixed Asset Management System.</b><br>
+        Use the menu above to access the relevant module based on your role.<br><br>
+        <b>CFAMS</b> (Admin) — Setup operations: CARCMD, CDSM, CSOTM, COTLM, CCSESM<br>
+        <b>CFAMO</b> (Users) — Operations: AQ, AA, AM, AD, AP, AT, AW, AR, AL, AS
+      </div>
+    </div>
+
+    <!-- CFAMS -->
+    <div id="pg-cfams" style="display:none">
+      <div class="page-header">
+        <span>Fixed Asset Management Setup</span>
+        <span id="cfams-lbl" style="font-weight:normal;color:#555;font-size:12px"></span>
+      </div>
+      <div class="crit-box">
+        <div class="crit-row">
+          <label>Function <span>*</span></label>
+          <select id="s-fn" onchange="cfamsReset()">
+            <option value="">--Select--</option>
+            <option value="A">A - Add</option>
+            <option value="M">M - Modify</option>
+            <option value="I">I - Inquire</option>
+            <option value="V">V - Verify</option>
+            <option value="X">X - Cancel</option>
+            <option value="D">D - Delete</option>
+            <option value="U">U - Undelete</option>
+          </select>
+          <label>Operation <span>*</span></label>
+          <select id="s-op" onchange="cfamsReset()">
+            <option value="">--Select--</option>
+            <option value="CARCMD">CARCMD - Custom Asset Ref Code</option>
+            <option value="CDSM">CDSM - Designation Scale Mapping</option>
+            <option value="CSOTM">CSOTM - Sol Office Type Mapping</option>
+            <option value="COTLM">COTLM - Office Type Limit Mapping</option>
+            <option value="CCSESM">CCSESM - Expense Type Sol Mapping</option>
+          </select>
+          <button class="btn btn-p" onclick="cfamsGo()">Go</button>
+          <button class="btn" onclick="cfamsClr()">Clear</button>
+        </div>
+      </div>
+      <div id="s-res" class="res-box"></div>
+      <div id="s-det" class="det-box"></div>
+      <div id="s-lst" class="list-box"></div>
+    </div>
+
+    <!-- CFAMO -->
+    <div id="pg-cfamo" style="display:none">
+      <div class="page-header">
+        <span>Fixed Asset Management Operations</span>
+        <span id="cfamo-lbl" style="font-weight:normal;color:#555;font-size:12px"></span>
+      </div>
+      <div class="crit-box">
+        <div class="crit-row">
+          <label>Operation <span>*</span></label>
+          <select id="o-op" onchange="cfamoReset()">
+            <option value="">--Select--</option>
+            <option value="AQ">AQ - Asset Request</option>
+            <option value="AA">AA - Asset Approval/Reject</option>
+            <option value="AM">AM - Asset Modify</option>
+            <option value="AD">AD - Asset Delete</option>
+            <option value="AP">AP - Asset Procurement</option>
+            <option value="AT">AT - Asset Transfer</option>
+            <option value="AW">AW - Asset Disposal</option>
+            <option value="AR">AR - Asset Repair</option>
+            <option value="AL">AL - Asset Revaluation</option>
+            <option value="AS">AS - Asset Surrender</option>
+          </select>
+          <label>Function Code</label>
+          <select id="o-fn">
+            <option value="">SELECT</option>
+            <option value="A">A - Add</option>
+            <option value="V">V - Verify</option>
+          </select>
+          <label>Asset Request Id</label>
+          <input type="text" id="o-rid" placeholder="REQ-XXXX-XXXXXXXX">
+          <label>Asset Name</label>
+          <input type="text" id="o-an">
+        </div>
+        <div class="crit-row">
+          <label>Category Code</label>
+          <input type="text" id="o-cat">
+          <label>SubCategory Code</label>
+          <input type="text" id="o-sub">
+          <button class="btn btn-p" onclick="cfamoGo()">Go</button>
+          <button class="btn" onclick="cfamoClr()">Clear</button>
+        </div>
+      </div>
+      <div id="o-res" class="res-box"></div>
+      <div id="o-det" class="det-box"></div>
+      <div id="o-lst" class="list-box"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const API='/api'; let CU={};
+
+async function api(p,m='GET',b=null){
+  const o={method:m,credentials:'include',headers:{'Content-Type':'application/json'}};
+  if(b) o.body=JSON.stringify(b);
+  const r=await fetch(API+p,o); return r.json();
+}
+
+function v(id){const e=document.getElementById(id);return e?e.value.trim():'';}
+function fmtAmt(x){return x?'Rs.'+Number(x).toLocaleString('en-IN'):'-';}
+
+function stag(s){
+  const m={PENDING:'tp',MODIFIED:'tp',APPROVED:'ta',REJECTED:'tr',PROCURED:'tc',ACTIVE:'ta'};
+  return `<span class="tag ${m[s]||'to'}">${s}</span>`;
+}
+function vtag(x){return x?`<span class="tag ta">${x}</span>`:`<span class="tag tp">Unverified</span>`;}
+
+// ── LOGIN ──
+async function doLogin(){
+  const u=v('lu'),p=v('lp');
+  const r=await api('/login','POST',{username:u,password:p});
+  if(r.success){
+    CU=r.data;
+    document.getElementById('tb-u').textContent=CU.username;
+    document.getElementById('tb-r').textContent=CU.role;
+    document.getElementById('tb-d').textContent=new Date().toLocaleDateString('en-IN');
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('app').style.display='block';
+    if(CU.role==='ADMIN') document.getElementById('m-cfams').style.display='block';
+    else document.getElementById('m-cfamo').style.display='block';
+  } else {
+    const e=document.getElementById('lerr'); e.textContent=r.error; e.style.display='block';
+  }
+}
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('login-screen').style.display!=='none')doLogin();});
+async function doLogout(){await api('/logout','POST');location.reload();}
+
+// ── NAV ──
+function nav(pg,el){
+  ['home','cfams','cfamo'].forEach(p=>document.getElementById('pg-'+p).style.display='none');
+  document.querySelectorAll('.menu-item').forEach(m=>m.classList.remove('active'));
+  document.getElementById('pg-'+pg).style.display='block';
+  if(el)el.classList.add('active');
+}
+
+// ── MSG ──
+function res(id,msg,err=false){
+  const e=document.getElementById(id);
+  e.innerHTML=(err?'⚠ ':'✔ ')+msg;
+  e.className='res-box show'+(err?' err':'');
+}
+function clrRes(id){document.getElementById(id).className='res-box';}
+
+// ══════════════════════════════════════════
+// CFAMS
+// ══════════════════════════════════════════
+function cfamsClr(){document.getElementById('s-fn').value='';document.getElementById('s-op').value='';cfamsReset();}
+function cfamsReset(){
+  const d=document.getElementById('s-det'); d.innerHTML=''; d.className='det-box';
+  document.getElementById('s-lst').className='list-box'; clrRes('s-res');
+}
+
+async function cfamsGo(){
+  const fn=v('s-fn'), op=v('s-op');
+  if(!fn||!op){res('s-res','Please select Function and Operation',true);return;}
+  document.getElementById('cfams-lbl').textContent=op;
+  clrRes('s-res');
+  if(fn==='I'){await cfamsInquire(op);return;}
+  cfamsBuildForm(fn,op);
+}
+
+async function cfamsInquire(op){
+  const ep={CARCMD:'/cfams/carcmd',CDSM:'/cfams/cdsm',CSOTM:'/cfams/csotm',COTLM:'/cfams/cotlm',CCSESM:'/cfams/ccsesm'};
+  const r=await api(ep[op]);
+  if(!r.success){res('s-res',r.error,true);return;}
+  const lst=document.getElementById('s-lst');
+  if(!r.data.length){lst.innerHTML='<p style="color:#888;padding:8px">No records found.</p>';}
+  else lst.innerHTML=cfamsTbl(op,r.data);
+  lst.className='list-box show';
+}
+
+function cfamsTbl(op,rows){
+  const H={
+    CARCMD:['ID','Ref Type','Ref Code','Category','Sub Cat','Scale','Status','Created By','Verified'],
+    CDSM:  ['ID','Designation','Scale','Status','Created By','Verified'],
+    CSOTM: ['ID','Sol ID','Office Type','Status','Created By','Verified'],
+    COTLM: ['ID','Office Type','Limit','Start Date','End Date','Status','Created By','Verified'],
+    CCSESM:['ID','Category','Sub Cat','Sol ID','Expense Type','Depr Acct','Status','Created By','Verified'],
+  };
+  const ths=H[op].map(h=>`<th>${h}</th>`).join('');
+  const trs=rows.map(r=>{
+    let c='';
+    if(op==='CARCMD') c=`<td>${r.id}</td><td>${r.reference_type}</td><td>${r.reference_code}</td><td>${r.category}</td><td>${r.sub_category}</td><td>${r.scale}</td><td>${stag(r.status)}</td><td>${r.created_by}</td><td>${vtag(r.verified_by)}</td>`;
+    if(op==='CDSM')   c=`<td>${r.id}</td><td>${r.designation}</td><td>${r.scale}</td><td>${stag(r.status)}</td><td>${r.created_by}</td><td>${vtag(r.verified_by)}</td>`;
+    if(op==='CSOTM')  c=`<td>${r.id}</td><td>${r.sol_id}</td><td>${r.office_type}</td><td>${stag(r.status)}</td><td>${r.created_by}</td><td>${vtag(r.verified_by)}</td>`;
+    if(op==='COTLM')  c=`<td>${r.id}</td><td>${r.office_type}</td><td>${fmtAmt(r.limit_amount)}</td><td>${r.limit_start_date}</td><td>${r.limit_end_date}</td><td>${stag(r.status)}</td><td>${r.created_by}</td><td>${vtag(r.verified_by)}</td>`;
+    if(op==='CCSESM') c=`<td>${r.id}</td><td>${r.category_code}</td><td>${r.sub_category_code}</td><td>${r.sol_id}</td><td>${r.expense_type}</td><td>${r.depreciation_account}</td><td>${stag(r.status)}</td><td>${r.created_by}</td><td>${vtag(r.verified_by)}</td>`;
+    return `<tr>${c}</tr>`;
+  }).join('');
+  return `<table class="dtbl"><thead><tr>${ths}</tr></thead><tbody>${trs}</tbody></table>`;
+}
+
+function cfamsBuildForm(fn,op){
+  const d=document.getElementById('s-det');
+  d.className='det-box show';
+  const needId=['V','D','U','M'].includes(fn);
+  let f='';
+  if(needId) f+=row('Record ID *','<input type="number" id="cf-id" min="1">','');
+
+  if(fn==='A'||fn==='M'){
+    if(op==='CARCMD') f+=`
+      ${row2('Reference Type *','<select id="cf-rt"><option value="">--SELECT--</option><option>CC-CATEGORY CODE</option><option>CS-SUB CATEGORY CODE</option><option>SC-SCALE</option><option>OT-OFFICE TYPE</option></select>','Reference Code *','<input type="text" id="cf-rc">')}
+      ${row2('Category *','<input type="text" id="cf-cat">','Sub Category *','<input type="text" id="cf-sc">')}
+      ${row2('Scale *','<input type="text" id="cf-sk">','Description','<input type="text" id="cf-desc">')}`;
+    if(op==='CDSM') f+=`
+      ${row2('Designation *','<input type="text" id="cf-desig">','Scale *','<input type="text" id="cf-sk">')}
+      ${row2('Description','<input type="text" id="cf-desc">','Txn Allowed Flag *','<select id="cf-txn"><option value="YES">YES</option><option value="NO">NO</option></select>')}`;
+    if(op==='CSOTM') f+=`
+      ${row2('Sol ID *','<input type="text" id="cf-sid">','Office Type *','<input type="text" id="cf-ot">')}`;
+    if(op==='COTLM') f+=`
+      ${row2('Office Type *','<input type="text" id="cf-ot">','Office Type Desc','<input type="text" id="cf-otd">')}
+      ${row2('Category Code','<input type="text" id="cf-cat">','Sub Category Code','<input type="text" id="cf-sc">')}
+      ${row2('Branch Limit *','<input type="number" id="cf-bl">','Scale 1 Limit *','<input type="number" id="cf-s1">')}
+      ${row2('Scale 2 Limit','<input type="number" id="cf-s2">','Scale 3 Limit','<input type="number" id="cf-s3">')}
+      ${row2('Frequency *','<select id="cf-freq"><option value="O - ONE TIME">O - ONE TIME</option><option value="R - RECURRING">R - RECURRING</option></select>','Limit Start Date *','<input type="date" id="cf-sd">')}
+      ${row2('Limit End Date *','<input type="date" id="cf-ed">','',' ')}`;
+    if(op==='CCSESM') f+=`
+      ${row2('Category Code *','<input type="text" id="cf-cat">','Sol ID *','<input type="text" id="cf-sid">')}
+      ${row2('Sub Category Code *','<input type="text" id="cf-sc">','Expense Type *','<select id="cf-et"><option value="REVENUE">REVENUE</option><option value="CAPITAL">CAPITAL</option></select>')}
+      ${row2('Description','<input type="text" id="cf-desc">','Depreciation Method','<select id="cf-dm"><option value="SLM">SLM</option><option value="WDV">WDV</option></select>')}
+      ${row2('Account Number *','<input type="text" id="cf-an">','Depreciation Account *','<select id="cf-da"><option value="">--Select--</option><option>ACC001</option><option>ACC002</option><option>ACC003</option><option>ACC004</option><option>ACC005</option></select>')}
+      ${row2('Revaluation *','<select id="cf-rv"><option value="Y-YES">Y-YES</option><option value="N-NO">N-NO</option></select>','',' ')}`;
+  }
+
+  d.innerHTML=`<table class="ftbl"><tbody>${f}</tbody></table>
+    <div class="btn-row">
+      <button class="btn btn-p" onclick="cfamsSub('${fn}','${op}')">Submit</button>
+      <button class="btn" onclick="cfamsReset()">Cancel</button>
+    </div>`;
+}
+
+function row(lbl,inp,lbl2='',inp2=''){
+  return `<tr><td class="lbl">${lbl}</td><td>${inp}</td>${lbl2?`<td class="lbl">${lbl2}</td><td>${inp2}</td>`:''}</tr>`;
+}
+function row2(l1,i1,l2,i2){return row(l1,i1,l2,i2);}
+
+async function cfamsSub(fn,op){
+  const id=v('cf-id');
+  const ep={CARCMD:'/cfams/carcmd',CDSM:'/cfams/cdsm',CSOTM:'/cfams/csotm',COTLM:'/cfams/cotlm',CCSESM:'/cfams/ccsesm'};
+
+  if(fn==='V'){
+    if(!id){res('s-res','Record ID required for Verify',true);return;}
+    const r=await api(`${ep[op]}/${id}/verify`,'POST');
+    res('s-res',r.success?r.message:r.error,!r.success);
+    if(r.success)cfamsReset(); return;
+  }
+  if(fn==='D'){
+    if(!id){res('s-res','Record ID required',true);return;}
+    const r=await api(`${ep[op]}/${id}`,'DELETE');
+    res('s-res',r.success?r.message:r.error,!r.success);
+    if(r.success)cfamsReset(); return;
+  }
+  if(fn==='A'){
+    let body={},r;
+    if(op==='CARCMD') body={reference_type:v('cf-rt'),reference_code:v('cf-rc'),category:v('cf-cat'),sub_category:v('cf-sc'),scale:v('cf-sk')};
+    if(op==='CDSM')   body={designation:v('cf-desig'),scale:v('cf-sk')};
+    if(op==='CSOTM')  body={sol_id:v('cf-sid'),office_type:v('cf-ot')};
+    if(op==='COTLM')  body={office_type:v('cf-ot'),limit_amount:parseFloat(v('cf-bl')||0),limit_start_date:v('cf-sd'),limit_end_date:v('cf-ed')};
+    if(op==='CCSESM') body={category_code:v('cf-cat'),sub_category_code:v('cf-sc'),sol_id:v('cf-sid'),expense_type:v('cf-et'),depreciation_account:v('cf-da')};
+    r=await api(ep[op],'POST',body);
+    res('s-res',r.success?r.message:r.error,!r.success);
+    if(r.success)cfamsReset(); return;
+  }
+}
+
+// ══════════════════════════════════════════
+// CFAMO
+// ══════════════════════════════════════════
+function cfamoClr(){['o-op','o-fn'].forEach(x=>document.getElementById(x).value='');['o-rid','o-an','o-cat','o-sub'].forEach(x=>document.getElementById(x).value='');cfamoReset();}
+function cfamoReset(){const d=document.getElementById('o-det');d.innerHTML='';d.className='det-box';document.getElementById('o-lst').className='list-box';clrRes('o-res');}
+
+async function cfamoGo(){
+  const op=v('o-op'),fn=v('o-fn');
+  if(!op){res('o-res','Please select Operation',true);return;}
+  if(['AA','AM'].includes(op)&&fn){res('o-res','Function Code should be blank for '+op,true);return;}
+  if(['AP','AT','AW','AR','AL','AS'].includes(op)&&!fn){res('o-res','Function Code is mandatory for '+op,true);return;}
+  document.getElementById('cfamo-lbl').textContent=op; clrRes('o-res');
+  // If no fn selected, show list
+  if(!fn){
+    const r=await api('/cfamo/requests');
+    if(!r.success){res('o-res',r.error,true);return;}
+    renderReqTbl(r.data); return;
+  }
+  cfamoBuildForm(op,fn);
+}
+
+function renderReqTbl(rows){
+  const lst=document.getElementById('o-lst');
+  if(!rows.length){lst.innerHTML='<p style="color:#888;padding:8px">No records found.</p>';}
+  else{
+    const trs=rows.map(r=>`<tr>
+      <td style="font-size:11px">${r.request_id}</td>
+      <td>${r.asset_name}</td><td>${r.category}</td><td>${r.sub_category}</td>
+      <td>${r.quantity}</td><td>${fmtAmt(r.purchase_value)}</td>
+      <td>${stag(r.status)}</td><td>${r.created_by}</td>
+      <td style="font-size:11px">${r.created_at}</td>
+    </tr>`).join('');
+    lst.innerHTML=`<table class="dtbl"><thead><tr>
+      <th>Request ID</th><th>Asset Name</th><th>Category</th><th>Sub Cat</th>
+      <th>Qty</th><th>Purchase Value</th><th>Status</th><th>Created By</th><th>Created At</th>
+    </tr></thead><tbody>${trs}</tbody></table>`;
+  }
+  lst.className='list-box show';
+}
+
+function cfamoBuildForm(op,fn){
+  const d=document.getElementById('o-det'); d.className='det-box show';
+  const rid=v('o-rid'),cat=v('o-cat'),sub=v('o-sub'),an=v('o-an');
+  let f=`
+    ${row2('Asset Request Id *',`<input type="text" id="ca-rid" value="${rid}">`, 'Asset Name *',`<input type="text" id="ca-an" value="${an}">`)}
+    ${row2('Asset Category *',`<input type="text" id="ca-cat" value="${cat}">`, 'Asset Sub Category *',`<input type="text" id="ca-sc" value="${sub}">`)}`;
+
+  if(op==='AQ') f+=`
+    ${row2('Item Quantity *','<input type="number" id="ca-qty" value="1" min="1">','Purchase Value','<input type="number" id="ca-pv" step="0.01">')}
+    ${row2('Total Asset Value','<input type="number" id="ca-tav" step="0.01">','Sol ID','<input type="text" id="ca-sid">')}
+    ${row2('Vendor Name','<input type="text" id="ca-vn">','Free Text 2','<input type="text" id="ca-ft2">')}
+    ${row2('Free Text 3','<input type="text" id="ca-ft3">','Free Text 4','<input type="text" id="ca-ft4">')}`;
+
+  if(op==='AA') f+=`
+    ${row2('Approve *','<select id="ca-act"><option value="">--Select--</option><option value="APPROVED">Approve</option><option value="REJECTED">Reject</option></select>','',' ')}`;
+
+  if(op==='AM') f+=`
+    ${row2('Item Quantity','<input type="number" id="ca-qty" min="1">','Total Asset Value','<input type="number" id="ca-tav" step="0.01">')}
+    ${row2('Purchase Value','<input type="number" id="ca-pv" step="0.01">','Sol ID','<input type="text" id="ca-sid">')}`;
+
+  if(op==='AP') f+=`
+    ${row2('Vendor Name','<input type="text" id="ca-vn">','Purchase Date','<input type="date" id="ca-pd">')}
+    ${row2('Purchase Amount *','<input type="number" id="ca-pa" step="0.01">','Account Debit','<input type="text" id="ca-dr">')}
+    ${row2('Account Credit','<input type="text" id="ca-cr">','',' ')}`;
+
+  if(op==='AT') f+=`
+    ${row2('Serial Number','<input type="text" id="ca-sn">','Parked SOL','<input type="text" id="ca-ps">')}
+    ${row2('No Of Units *','<input type="number" id="ca-units" value="1" min="1">','Item Quantity','<input type="number" id="ca-qty">')}
+    ${row2('Sender Branch','<input type="text" id="ca-sb" readonly>','Receiver Branch *','<input type="text" id="ca-rb">')}
+    ${row2('Transfer Total Asset Value','<input type="number" id="ca-tav" readonly>','Net Asset Value','<input type="number" id="ca-nav" readonly>')}`;
+
+  if(op==='AW') f+=`
+    ${row2('Serial Number','<input type="text" id="ca-sn">','Parked SOL','<input type="text" id="ca-ps">')}
+    ${row2('Asset Int Branch','<input type="text" id="ca-ib">','Item Quantity','<input type="number" id="ca-qty">')}
+    ${row2('Total Asset Value','<input type="number" id="ca-tav" readonly>','Net Asset Value','<input type="number" id="ca-nav" readonly>')}
+    ${row2('Sale Amount *','<input type="number" id="ca-sa" step="0.01">','Tran Mode *','<select id="ca-tm"><option value="TRANSFER">TRANSFER</option><option value="C-Cash">C-Cash</option></select>')}
+    ${row2('Disposal Type *','<select id="ca-dt"><option value="S-Sale">S-Sale</option><option value="WRITEOFF">WRITEOFF</option><option value="AUCTION">AUCTION</option></select>','Disposal Amount *','<input type="number" id="ca-da" step="0.01">')}
+    ${row2('Asset Buyer Account','<input type="text" id="ca-ba">','Disposal Item Quantity','<input type="number" id="ca-dq">')}
+    ${row2('Unit Value','<input type="number" id="ca-uv" readonly>','',' ')}`;
+
+  if(op==='AR') f+=`
+    ${row2('Serial Number','<input type="text" id="ca-sn">','Parked SOL','<input type="text" id="ca-ps">')}
+    ${row2('Asset Int Branch','<input type="text" id="ca-ib">','Item Quantity','<input type="number" id="ca-qty">')}
+    ${row2('Repair Amount *','<input type="number" id="ca-ra" step="0.01">','Asset Located Branch','<input type="text" id="ca-lb">')}`;
+
+  if(op==='AL') f+=`
+    ${row2('Asset Int Branch','<input type="text" id="ca-ib">','Total Asset Value','<input type="number" id="ca-tav" readonly>')}
+    ${row2('Net Asset Value *','<input type="number" id="ca-nav">','Upto Date Depreciation Amount','<input type="number" id="ca-upd" readonly>')}
+    ${row2('Revaluation Amount *','<input type="number" id="ca-rva" step="0.01">','Asset Located Branch','<input type="text" id="ca-lb">')}`;
+
+  if(op==='AS') f+=`
+    ${row2('Serial Number','<input type="text" id="ca-sn">','Parked SOL','<input type="text" id="ca-ps">')}
+    ${row2('Item Quantity','<input type="number" id="ca-qty">','No Of Units *','<input type="number" id="ca-units" value="1" min="1">')}
+    ${row2('Total Asset Value','<input type="number" id="ca-tav" readonly>','Net Asset Value','<input type="number" id="ca-nav" readonly>')}
+    ${row2('Sender Branch','<input type="text" id="ca-sb" readonly>','Receiver Branch *','<input type="text" id="ca-rb">')}
+    ${row2('Unit Value','<input type="number" id="ca-uv" readonly>','',' ')}`;
+
+  d.innerHTML=`<table class="ftbl"><tbody>${f}</tbody></table>
+    <div class="btn-row">
+      <button class="btn btn-p" onclick="cfamoSub('${op}','${fn}')">Submit</button>
+      <button class="btn" onclick="cfamoReset()">Cancel</button>
+    </div>`;
+}
+
+async function cfamoSub(op,fn){
+  const rid=v('ca-rid');
+  if(!rid&&op!=='AQ'){res('o-res','Asset Request ID is required',true);return;}
+  let r;
+
+  if(fn==='V'){
+    if(op==='AA'){r=await api('/cfamo/approve','POST',{request_id:rid,action:v('ca-act')});}
+    else{
+      const ve={AP:'/cfamo/procure',AT:'/cfamo/transfer',AW:'/cfamo/dispose',AR:'/cfamo/repair',AL:'/cfamo/revalue',AS:'/cfamo/surrender'};
+      r=await api(`${ve[op]}/${rid}/verify`,'POST');
+    }
+    if(r)res('o-res',r.success?(r.message+(r.data?.transaction_ref?' · TXN: '+r.data.transaction_ref:'')):r.error,!r.success);
+    return;
+  }
+
+  if(op==='AQ') r=await api('/cfamo/request','POST',{category:v('ca-cat'),sub_category:v('ca-sc'),asset_name:v('ca-an'),quantity:parseInt(v('ca-qty')||1),purchase_value:parseFloat(v('ca-pv')||0)||null,sol_id:v('ca-sid'),vendor_name:v('ca-vn')});
+  else if(op==='AA') r=await api('/cfamo/approve','POST',{request_id:rid,action:v('ca-act')});
+  else if(op==='AM') r=await api(`/cfamo/request/${rid}`,'PUT',{asset_name:v('ca-an'),quantity:parseInt(v('ca-qty')||0)||null,purchase_value:parseFloat(v('ca-pv')||0)||null,sol_id:v('ca-sid')});
+  else if(op==='AD') r=await api(`/cfamo/request/${rid}`,'DELETE');
+  else if(op==='AP') r=await api('/cfamo/procure','POST',{request_id:rid,vendor_name:v('ca-vn'),purchase_date:v('ca-pd'),purchase_amount:parseFloat(v('ca-pa')||0),account_debit:v('ca-dr'),account_credit:v('ca-cr')});
+  else if(op==='AT') r=await api('/cfamo/transfer','POST',{request_id:rid,receiver_branch:v('ca-rb'),units:parseInt(v('ca-units')||1)});
+  else if(op==='AW') r=await api('/cfamo/dispose','POST',{request_id:rid,sale_amount:parseFloat(v('ca-sa')||0),disposal_type:v('ca-dt'),tran_mode:v('ca-tm'),disposal_amount:parseFloat(v('ca-da')||0)});
+  else if(op==='AR') r=await api('/cfamo/repair','POST',{request_id:rid,repair_amount:parseFloat(v('ca-ra')||0)});
+  else if(op==='AL') r=await api('/cfamo/revalue','POST',{request_id:rid,revaluation_amount:parseFloat(v('ca-rva')||0),net_asset_value:parseFloat(v('ca-nav')||0)});
+  else if(op==='AS') r=await api('/cfamo/surrender','POST',{request_id:rid,receiver_branch:v('ca-rb'),units:parseInt(v('ca-units')||1)});
+
+  if(r){
+    let msg=r.success?r.message:r.error;
+    if(r.success&&r.data){
+      if(r.data.request_id) msg+=` — Request ID: <b>${r.data.request_id}</b>`;
+      if(r.data.transaction_ref) msg+=` · TXN: ${r.data.transaction_ref}`;
+      if(r.data.total_asset_value) msg+=` · Total: ${fmtAmt(r.data.total_asset_value)}`;
+    }
+    res('o-res',msg,!r.success);
+    if(r.success)cfamoReset();
+  }
+}
+</script>
+</body>
+</html>
